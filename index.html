@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Engineering — The Big Picture (Interactive)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- Reset ---------- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+img,svg{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;background:none;border:0;color:inherit;text-align:left}
+
+/* ---------- Tokens ---------- */
+:root{
+  --bg:#f4f6fb;            /* cool paper */
+  --surface:#ffffff;
+  --ink:#0f1728;
+  --sub:#5a6478;
+  --line:#e3e8f2;
+  --font-d:'Space Grotesk',system-ui,sans-serif;
+  --font-b:'Inter',system-ui,sans-serif;
+  --font-m:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  /* layer hues */
+  --c-input:#2563eb;   --t-input:#eaf1fe;
+  --c-app:#059669;     --t-app:#e7f6f0;
+  --c-orch:#7c3aed;    --t-orch:#f3eefe;
+  --c-llm:#a21caf;     --t-llm:#fbeafe;
+  --c-rag:#0e7fa0;     --t-rag:#e6f5f9;
+  --c-found:#46536b;   --t-found:#eef1f6;
+  --c-out:#d97706;     --t-out:#fdf3e3;
+  --c-gov:#dc2626;     --t-gov:#fdecec;
+
+  --r:14px;
+  --shadow:0 1px 2px rgba(15,23,40,.05),0 10px 30px rgba(15,23,40,.07);
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-b);
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- Altitude rail (signature, desktop) ---------- */
+.alt-rail{
+  position:fixed;left:22px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:0;z-index:40;
+}
+.alt-rail a{
+  display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--sub);
+  font-family:var(--font-d);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  padding:14px 0;position:relative;
+}
+.alt-rail a::before{
+  content:'';width:9px;height:9px;border-radius:50%;
+  border:2px solid #b9c2d4;background:var(--bg);flex:none;transition:all .25s;
+}
+.alt-rail a:not(:last-child)::after{
+  content:'';position:absolute;left:4px;top:calc(50% + 10px);width:1px;height:24px;background:#c9d2e2;
+}
+.alt-rail a.on{color:var(--ink)}
+.alt-rail a.on::before{border-color:var(--c-orch);background:var(--c-orch);box-shadow:0 0 0 5px rgba(124,58,237,.15)}
+.alt-rail .lab{opacity:0;transform:translateX(-4px);transition:all .25s}
+.alt-rail a.on .lab,.alt-rail a:hover .lab{opacity:1;transform:none}
+/* The shell is 1140px wide and centered; the rail + labels need ~210px of free
+   left margin. Only show it when the viewport truly has that space. */
+@media(max-width:1560px){.alt-rail{display:none}}
+
+/* ---------- Shell ---------- */
+.shell{max-width:1140px;margin:0 auto;padding:0 28px}
+@media(max-width:600px){.shell{padding:0 16px}}
+.sec{padding:72px 0 8px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-d);font-size:11.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--c-orch);margin-bottom:14px;
+}
+.eyebrow::before{content:'';width:22px;height:2px;background:var(--c-orch);border-radius:2px}
+.sec h2{font-family:var(--font-d);font-size:clamp(24px,3.2vw,34px);font-weight:700;letter-spacing:-.01em}
+.sec .lede{color:var(--sub);max-width:680px;margin-top:8px;font-size:15.5px}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;overflow:hidden;padding:84px 0 64px;background:linear-gradient(180deg,#0d1226 0%,#171f3d 70%,#f4f6fb 100%)}
+.hero .contours{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.hero .shell{position:relative}
+.hero .eyebrow{color:#a5b4fc}.hero .eyebrow::before{background:#a5b4fc}
+.hero h1{font-family:var(--font-d);font-weight:700;color:#fff;font-size:clamp(34px,5.4vw,58px);letter-spacing:-.02em;line-height:1.06;max-width:820px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,#8ab4ff,#c084fc,#f9a8d4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.sub{color:#c3cbe4;font-size:17px;max-width:660px;margin-top:18px}
+.tkd{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.tkd a{
+  font-family:var(--font-d);font-weight:600;font-size:13px;letter-spacing:.04em;text-decoration:none;
+  padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.22);color:#fff;background:rgba(255,255,255,.06);
+  transition:background .2s,transform .2s;
+}
+.tkd a:hover{background:rgba(255,255,255,.14);transform:translateY(-1px)}
+.tkd b{margin-right:8px;letter-spacing:.08em}
+.tkd .a1 b{color:#8ab4ff}.tkd .a2 b{color:#c084fc}.tkd .a3 b{color:#6ee7b7}.tkd .a4 b{color:#fbbf24}
+.hero .hint{
+  display:inline-flex;align-items:center;gap:10px;margin-top:34px;padding:11px 18px;border-radius:12px;
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#e6eaf7;font-size:14px;
+}
+.hero .hint svg{width:17px;height:17px;stroke:#fbbf24;flex:none}
+
+/* ---------- Family (10,000 ft) ---------- */
+.family{margin-top:30px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start}
+@media(max-width:900px){.family{grid-template-columns:1fr}}
+.nest{position:relative;height:460px}
+.ring{
+  position:absolute;border-radius:22px;padding:14px 18px;
+  border:2px solid color-mix(in srgb,var(--hue) 30%,transparent);
+  background:color-mix(in srgb,var(--hue) 7%,#fff);
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  transition:border-color .22s,box-shadow .22s,background .22s;
+}
+.ring[data-lv="ai"]{inset:0}
+.ring[data-lv="ml"]{top:72px;left:26px;right:26px;bottom:26px}
+.ring[data-lv="dl"]{top:144px;left:52px;right:52px;bottom:52px}
+.ring[data-lv="gen"]{top:216px;left:78px;right:78px;bottom:78px}
+@media(max-width:600px){
+  .ring{padding:12px 14px}
+  .ring[data-lv="ml"]{left:12px;right:12px;bottom:12px}
+  .ring[data-lv="dl"]{left:24px;right:24px;bottom:24px}
+  .ring[data-lv="gen"]{left:36px;right:36px;bottom:36px}
+}
+.ring:hover{border-color:var(--hue)}
+.ring:focus-visible{outline:3px solid color-mix(in srgb,var(--hue) 45%,transparent);outline-offset:2px}
+.ring.on{border-color:var(--hue);background:color-mix(in srgb,var(--hue) 13%,#fff);box-shadow:0 0 0 4px color-mix(in srgb,var(--hue) 16%,transparent)}
+.ring .rl{display:flex;align-items:center;gap:9px;font-family:var(--font-d);font-weight:700;font-size:17px;color:var(--hue);letter-spacing:-.01em}
+.ring .rl .ico{width:28px;height:28px;border-radius:8px;background:var(--hue);display:grid;place-items:center;flex:none}
+.ring .rl .ico svg{width:15px;height:15px;stroke:#fff}
+.ring .rl small{font-family:var(--font-b);font-weight:500;font-size:12.5px;color:var(--sub);letter-spacing:0}
+.ring .ex{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ring .ex i{font-style:normal;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:#fff;color:var(--hue);border:1px solid color-mix(in srgb,var(--hue) 25%,transparent)}
+
+.lvl{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.lvl .bar{height:4px;background:var(--hue)}
+.lvl .pad{padding:20px 22px 22px}
+.lvl .crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--font-d);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9aa3b6}
+.lvl .crumbs span.cur{color:var(--hue)}
+.lvl h3{font-family:var(--font-d);font-size:23px;font-weight:700;letter-spacing:-.01em;margin-top:8px}
+.lvl .q{display:inline-block;margin-top:6px;font-size:13.5px;font-weight:600;color:var(--hue);background:var(--tint);border-radius:8px;padding:4px 10px}
+.lvl .def{font-size:14.5px;color:#2c3648;margin-top:12px}
+.lvl .analogy{margin-top:14px}
+.lvl .m-sec{margin:18px 0 9px}
+.lvl .ex{display:flex;flex-wrap:wrap;gap:6px}
+.lvl .ex i{font-style:normal;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--tint);color:var(--hue)}
+.lvl .mile{display:flex;gap:12px;align-items:flex-start;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);font-size:13.5px;color:var(--sub)}
+.lvl .mile b.yr{font-family:var(--font-d);font-size:20px;color:var(--hue);line-height:1.1;flex:none}
+.lvl .nav{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.lbtn{font-family:var(--font-d);font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:11px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;transition:all .2s}
+.lbtn:hover{border-color:var(--hue);color:var(--hue)}
+.lbtn.go{background:var(--hue);border-color:var(--hue);color:#fff}
+.lbtn.go:hover{color:#fff;transform:translateY(-1px);box-shadow:0 8px 18px color-mix(in srgb,var(--hue) 35%,transparent)}
+.lbtn:disabled{opacity:.4;cursor:default}
+
+.timeline{margin-top:26px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px 16px}
+.timeline .tl-h{font-family:var(--font-d);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sub)}
+.tl{list-style:none;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:14px;position:relative}
+.tl::before{content:'';position:absolute;left:8px;right:8px;top:7px;height:2px;background:linear-gradient(90deg,var(--c-input),var(--c-app),var(--c-orch),var(--c-llm))}
+@media(max-width:760px){.tl{grid-template-columns:repeat(3,1fr);row-gap:16px}.tl::before{display:none}}
+.tl button{display:flex;flex-direction:column;gap:3px;position:relative;width:100%;border-radius:10px;padding:0 4px 4px}
+.tl button::before{content:'';width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--hue);margin-bottom:6px;transition:transform .2s}
+.tl button:hover::before,.tl button.on::before{transform:scale(1.2);background:var(--hue)}
+.tl b{font-family:var(--font-d);font-size:17px;color:var(--hue)}
+.tl span{font-size:12.5px;color:#3d4759;line-height:1.35}
+
+/* ---------- Map (5,000 ft) ---------- */
+.map{margin-top:34px;display:grid;grid-template-columns:200px 1fr 200px;gap:18px;align-items:start}
+@media(max-width:960px){.map{grid-template-columns:1fr}}
+
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);width:100%;position:relative;
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+button.card:hover,button.card:focus-visible{transform:translateY(-3px);box-shadow:0 4px 8px rgba(15,23,40,.06),0 18px 40px rgba(15,23,40,.12);border-color:var(--hue,#94a3b8)}
+button.card:focus-visible{outline:3px solid color-mix(in srgb,var(--hue) 40%,transparent);outline-offset:2px}
+.card .bar{height:4px;border-radius:var(--r) var(--r) 0 0;background:var(--hue)}
+.card .pad{padding:15px 16px 16px}
+.kicker{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--font-d);font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--hue);
+}
+.kicker .ico{width:26px;height:26px;border-radius:8px;background:var(--tint);display:grid;place-items:center;flex:none}
+.kicker .ico svg{width:15px;height:15px;stroke:var(--hue)}
+.kicker .no{margin-left:auto;margin-right:30px;font-size:10.5px;color:#9aa3b6;letter-spacing:.1em}
+.card h3{font-family:var(--font-d);font-size:16.5px;font-weight:700;margin-top:9px;letter-spacing:-.01em}
+.card .what{font-size:13px;color:var(--sub);margin-top:3px}
+.card .open{
+  position:absolute;top:14px;right:12px;width:22px;height:22px;border-radius:7px;
+  display:grid;place-items:center;color:var(--hue);background:var(--tint);
+  font-family:var(--font-d);font-weight:700;font-size:14px;line-height:1;
+}
+.mini{list-style:none;margin-top:11px;display:flex;flex-direction:column;gap:7px}
+.mini li{display:flex;gap:8px;font-size:12.5px;color:#3d4759;align-items:baseline}
+.mini li::before{content:'';width:5px;height:5px;border-radius:2px;background:var(--hue);flex:none;transform:translateY(-2px)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.pills i{font-style:normal;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--tint);color:var(--hue)}
+
+/* hue helpers */
+.h-input{--hue:var(--c-input);--tint:var(--t-input)}
+.h-app{--hue:var(--c-app);--tint:var(--t-app)}
+.h-orch{--hue:var(--c-orch);--tint:var(--t-orch)}
+.h-llm{--hue:var(--c-llm);--tint:var(--t-llm)}
+.h-rag{--hue:var(--c-rag);--tint:var(--t-rag)}
+.h-found{--hue:var(--c-found);--tint:var(--t-found)}
+.h-out{--hue:var(--c-out);--tint:var(--t-out)}
+.h-gov{--hue:var(--c-gov);--tint:var(--t-gov)}
+
+.stack{display:flex;flex-direction:column}
+.railcol{display:flex;flex-direction:column;gap:18px;position:sticky;top:20px}
+@media(max-width:960px){.railcol{position:static}}
+.side-tag{font-family:var(--font-d);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#9aa3b6;display:flex;align-items:center;gap:6px}
+.side-tag svg{width:14px;height:14px}
+.flow{align-self:center;padding:7px 0;color:#9aa6bd}
+.flow svg{width:16px;height:16px}
+.watch{align-self:stretch;display:flex;align-items:center;gap:10px;margin:14px 0 10px;font-family:var(--font-d);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--c-gov)}
+.watch::before,.watch::after{content:'';flex:1;height:0;border-top:1.5px dashed #f2b8b8}
+
+/* orchestration container */
+.orch-wrap{background:linear-gradient(180deg,#faf8ff,#f4eefe);border:1.5px dashed #c9b8f5;border-radius:18px;padding:14px}
+.orch-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border-radius:10px;padding:6px 8px;transition:background .2s}
+.orch-head:hover,.orch-head:focus-visible{background:rgba(124,58,237,.08)}
+.orch-head:focus-visible{outline:2px solid var(--c-orch)}
+.orch-head .t{display:flex;align-items:center;gap:9px;font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--c-orch);letter-spacing:.02em;flex-wrap:wrap}
+.orch-head .t .n{font-size:10.5px;color:#9a8cc9;letter-spacing:.1em}
+.orch-head .t small{font-family:var(--font-b);font-weight:500;font-size:12px;color:#8a7bb8;letter-spacing:0}
+.orch-head .more{font-size:11.5px;font-weight:600;color:var(--c-orch);background:#fff;border:1px solid #ddd0fa;border-radius:999px;padding:4px 11px;flex:none}
+.orch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:11px}
+@media(max-width:760px){.orch-grid{grid-template-columns:repeat(2,1fr)}}
+.orch-grid .card .pad{padding:12px 12px 13px}
+.orch-grid h3{font-size:14px;margin-top:8px}
+.orch-grid .what{font-size:11.8px}
+.llm-plate{margin-top:11px;background:linear-gradient(120deg,#f6e9fb, #efe4ff);border:1px solid #e2c8f0}
+.llm-plate .pad{display:flex;align-items:center;gap:14px;padding:13px 16px}
+.llm-plate .brain{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--c-orch),var(--c-llm));display:grid;place-items:center;flex:none;box-shadow:0 6px 14px rgba(162,28,175,.3)}
+.llm-plate .brain svg{width:23px;height:23px;stroke:#fff}
+.llm-plate h3{margin:0;font-size:16px}
+.llm-plate .what{margin-top:1px}
+.llm-plate .open{position:static;margin-left:auto}
+
+/* pipeline strip inside RAG card */
+.pipe{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:12px}
+.pipe i{font-style:normal;font-size:10.8px;font-weight:600;padding:4px 8px;border-radius:7px;background:var(--t-rag);color:var(--c-rag);white-space:nowrap}
+.pipe svg{width:11px;height:11px;stroke:#9db9c4;flex:none}
+
+/* ---------- Trace (1,000 ft) ---------- */
+.trace-box{margin-top:30px;background:#0e1430;border-radius:20px;padding:26px;box-shadow:var(--shadow);color:#e7ebf8}
+@media(max-width:600px){.trace-box{padding:18px 14px}}
+.trace-q{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px 16px}
+.trace-q .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#818cf8);display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:13px;color:#fff;flex:none}
+.trace-q p{font-size:15px}
+.trace-q p b{color:#fff}
+.trace-grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:22px;margin-top:22px;align-items:start}
+@media(max-width:860px){.trace-grid{grid-template-columns:1fr}}
+
+/* mini map */
+.mm-wrap .mm-h{font-family:var(--font-d);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8fa0d8;margin-bottom:10px}
+.mm{display:grid;grid-template-columns:64px 1fr 64px;gap:8px}
+.mm-center{display:flex;flex-direction:column;gap:7px}
+.mm-box{
+  display:block;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);
+  padding:8px 10px;font-family:var(--font-d);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8d97b8;
+  transition:all .3s;
+}
+.mm-side{display:flex;align-items:center;justify-content:center;text-align:center;padding:8px 4px}
+.mm-subs{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:7px}
+.mm-subs .mm-box,.mm-llm{font-size:9.5px;padding:5px 6px;letter-spacing:.04em;text-align:center}
+.mm-llm{margin-top:5px}
+.mm-box.hit{background:color-mix(in srgb,var(--hue) 28%,#141b3d);border-color:var(--hue);color:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--hue) 30%,transparent)}
+.mm-box.done{border-color:color-mix(in srgb,var(--hue) 55%,transparent);color:#d5dcf2}
+.mm-orch.hit{background:color-mix(in srgb,var(--hue) 14%,#141b3d);box-shadow:none}
+.mm-orch .mm-box.hit{background:var(--hue);color:#fff}
+
+/* narrative */
+.tnarr{min-height:300px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:18px 20px}
+.tnarr .step-tag{font-family:var(--font-d);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8fa0d8}
+.tnarr h3{font-family:var(--font-d);font-size:21px;font-weight:700;color:#fff;margin-top:6px;letter-spacing:-.01em}
+.tnarr p{font-size:14.5px;color:#dbe2f7;margin-top:8px}
+.tnarr p b{color:#fff}
+.packet{margin-top:16px;border:1px dashed rgba(165,180,252,.35);border-radius:12px;background:#0a0f26;padding:12px 14px}
+.packet .pk-lab{display:flex;align-items:center;gap:7px;font-family:var(--font-d);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#fbbf24}
+.packet .pk-lab svg{width:13px;height:13px;stroke:#fbbf24}
+.packet pre{font-family:var(--font-m);font-size:12.5px;line-height:1.6;color:#c7d2fe;margin-top:8px;white-space:pre-wrap;word-break:break-word}
+.tdots{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+.tdots button{width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.15);font-family:var(--font-d);font-size:12px;font-weight:700;color:#8d97b8;display:grid;place-items:center;text-align:center;transition:all .2s}
+.tdots button:hover{border-color:rgba(255,255,255,.4);color:#fff}
+.tdots button.done{border-color:color-mix(in srgb,var(--hue) 55%,transparent);color:#d5dcf2}
+.tdots button.hit{background:var(--hue);border-color:var(--hue);color:#fff}
+
+.trace-ctl{display:flex;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.btn{
+  font-family:var(--font-d);font-weight:600;font-size:13.5px;letter-spacing:.03em;
+  display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:11px;transition:all .2s;
+}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:linear-gradient(120deg,#7c3aed,#a21caf);color:#fff;box-shadow:0 8px 18px rgba(124,58,237,.35)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(124,58,237,.45)}
+.btn.ghost{border:1px solid rgba(255,255,255,.22);color:#dbe2f7}
+.btn.ghost:hover{background:rgba(255,255,255,.08)}
+.btn:disabled{opacity:.45;cursor:default;transform:none!important}
+.trace-ctl .prog{margin-left:auto;font-family:var(--font-d);font-size:12px;color:#8fa0d8;letter-spacing:.08em}
+
+/* ---------- Learning path (ground) ---------- */
+.path{margin-top:30px;display:flex;flex-direction:column;gap:0;counter-reset:step}
+.pgroup{display:flex;align-items:center;gap:12px;margin:6px 0 18px;font-family:var(--font-d);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
+.pgroup em{font-style:normal;color:var(--sub);font-weight:500;letter-spacing:.04em;text-transform:none;font-family:var(--font-b);font-size:13px}
+.pgroup::after{content:'';flex:1;height:1px;background:var(--line)}
+.pgroup + .pstep{margin-top:0}
+.pstep{display:grid;grid-template-columns:56px 1fr;gap:18px;position:relative;padding:0 0 22px}
+@media(max-width:600px){.pstep{grid-template-columns:44px 1fr;gap:12px}}
+.pstep::before{content:'';position:absolute;left:27px;top:44px;bottom:0;width:2px;background:linear-gradient(180deg,#d8def0,#eef1f8)}
+@media(max-width:600px){.pstep::before{left:21px}}
+.pstep.last::before{display:none}
+.pstep .num{
+  counter-increment:step;width:56px;height:44px;border-radius:13px;background:var(--surface);border:1px solid var(--line);
+  box-shadow:var(--shadow);display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:16px;color:var(--hue);
+}
+@media(max-width:600px){.pstep .num{width:44px}}
+.pstep .num::after{content:counter(step,decimal-leading-zero)}
+.pstep .body{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--hue);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px}
+.pstep .ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pstep .ph small{font-family:var(--font-d);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--hue);display:block}
+.pstep h3{font-family:var(--font-d);font-size:17px;font-weight:700}
+.pstep .dur{font-size:11.5px;font-weight:600;color:var(--sub);background:#f1f4f9;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.pstep p{font-size:14px;color:var(--sub);margin-top:6px}
+.pstep .pills{margin-top:10px}
+.proj{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--tint);font-size:13.5px;color:#2c3648}
+.proj svg{width:16px;height:16px;stroke:var(--hue);flex:none;margin-top:2px}
+.proj b{color:var(--hue)}
+.build{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:12px;counter-reset:b}
+.build button{width:100%;display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:#fbfcfe;transition:all .2s}
+.build button:hover,.build button:focus-visible{border-color:var(--hue);background:#fff;transform:translateX(2px)}
+.build .bn{width:28px;height:28px;border-radius:8px;background:var(--tint);color:var(--hue);display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:13px}
+.build b{font-family:var(--font-d);font-size:14px;color:var(--ink);display:block}
+.build span.d{font-size:12.5px;color:var(--sub)}
+.build .tl-pills{font-size:11px;font-weight:600;color:var(--hue);white-space:nowrap}
+@media(max-width:600px){.build button{grid-template-columns:28px 1fr}.build .tl-pills{display:none}}
+
+/* ---------- Takeaway footer ---------- */
+.takeaway{margin:64px 0 0;background:linear-gradient(120deg,#101736,#231c4d);border-radius:22px;padding:34px 34px;color:#fff;position:relative;overflow:hidden}
+@media(max-width:600px){.takeaway{padding:26px 20px}}
+.takeaway::after{content:'';position:absolute;right:-70px;top:-70px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(162,28,175,.4),transparent 70%)}
+.takeaway .eyebrow{color:#fbbf24}.takeaway .eyebrow::before{background:#fbbf24}
+.takeaway p{font-family:var(--font-d);font-size:clamp(17px,2.4vw,23px);font-weight:500;line-height:1.45;max-width:780px;position:relative}
+.takeaway p b{color:#c4b5fd}
+footer.credits{padding:34px 0 46px;color:#8a94ab;font-size:12.5px;text-align:center}
+footer.credits b{color:#5a6478;font-weight:600}
+
+/* ---------- Modal ---------- */
+.backdrop{
+  position:fixed;inset:0;background:rgba(10,14,30,.55);backdrop-filter:blur(3px);
+  display:none;align-items:flex-start;justify-content:center;z-index:100;padding:4vh 16px;overflow-y:auto;
+}
+.backdrop.show{display:flex;animation:fade .22s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--surface);border-radius:20px;max-width:720px;width:100%;
+  box-shadow:0 30px 80px rgba(5,10,30,.4);overflow:hidden;animation:pop .28s cubic-bezier(.2,.9,.3,1.05);
+}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.m-head{padding:22px 26px 18px;background:linear-gradient(120deg,color-mix(in srgb,var(--hue) 12%,#fff),color-mix(in srgb,var(--hue) 4%,#fff));border-bottom:1px solid var(--line);position:relative}
+.m-head .alt{font-family:var(--font-d);font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--hue);display:flex;align-items:center;gap:7px}
+.m-head .alt::before{content:'';width:18px;height:2px;background:var(--hue)}
+.m-head h3{font-family:var(--font-d);font-size:24px;font-weight:700;margin-top:7px;letter-spacing:-.01em;display:flex;align-items:center;gap:11px;padding-right:36px}
+.m-head h3 .ico{width:36px;height:36px;border-radius:11px;background:var(--hue);display:grid;place-items:center;flex:none}
+.m-head h3 .ico svg{width:19px;height:19px;stroke:#fff}
+.m-head .tag{color:var(--sub);font-size:14px;margin-top:5px}
+.m-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:10px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--sub);font-size:17px;transition:all .2s}
+.m-close:hover{color:var(--ink);border-color:#b8c2d6;transform:rotate(90deg)}
+.m-body{padding:22px 26px 26px;max-height:62vh;overflow-y:auto}
+.analogy{display:flex;gap:12px;background:var(--tint);border-radius:13px;padding:14px 16px;font-size:14px;color:#2c3648}
+.analogy .bulb{flex:none;width:30px;height:30px;border-radius:9px;background:#fff;display:grid;place-items:center}
+.analogy .bulb svg{width:16px;height:16px;stroke:var(--hue)}
+.analogy b{color:var(--ink)}
+.m-sec{font-family:var(--font-d);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.m-sec::after{content:'';flex:1;height:1px;background:var(--line)}
+.does{list-style:none;display:flex;flex-direction:column;gap:8px}
+.does li{display:flex;gap:10px;font-size:14px;color:#333d50}
+.does li::before{content:'→';color:var(--hue);font-weight:700;flex:none}
+.toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:620px){.toolgrid{grid-template-columns:1fr}}
+.tool{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:#fbfcfe;transition:all .2s}
+.tool:hover{border-color:var(--hue);background:#fff;transform:translateY(-1px)}
+.tool b{font-size:13.5px;display:block}
+.tool span{font-size:12px;color:var(--sub);display:block;margin-top:1px}
+.tool .grp{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--hue);background:var(--tint);border-radius:5px;padding:2px 7px;margin-bottom:5px}
+.tip{display:flex;gap:12px;background:#fffaf0;border:1px solid #f5e5c3;border-radius:13px;padding:13px 16px;font-size:13.5px;color:#4a4230}
+.tip .grad{flex:none;width:30px;height:30px;border-radius:9px;background:#fbbf24;display:grid;place-items:center}
+.tip .grad svg{width:16px;height:16px;stroke:#fff}
+.connects{display:flex;flex-wrap:wrap;gap:8px}
+.connects button{
+  font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+  background:#fff;color:#3b4457;display:inline-flex;align-items:center;gap:6px;transition:all .2s;
+}
+.connects button:hover{border-color:var(--hue);color:var(--hue);transform:translateY(-1px)}
+.connects button::after{content:'↗';font-size:11px}
+
+/* ---------- Entrance & motion prefs ---------- */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .reveal{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- Altitude rail -->
+<nav class="alt-rail" aria-label="Altitude">
+  <a href="#family" class="on"><span class="lab">10,000 ft · The AI family</span></a>
+  <a href="#map"><span class="lab">5,000 ft · Gen AI system</span></a>
+  <a href="#trace"><span class="lab">1,000 ft · One request</span></a>
+  <a href="#path"><span class="lab">Ground · Learning path</span></a>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <svg class="contours" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g fill="none" stroke="#5b6bc0" stroke-width="1" opacity=".5">
+      <path d="M-50 430 C 180 360, 320 470, 560 400 S 980 330, 1250 410"/>
+      <path d="M-50 370 C 200 300, 360 410, 600 340 S 1000 270, 1250 350"/>
+      <path d="M-50 310 C 220 240, 400 350, 640 280 S 1020 210, 1250 290"/>
+      <path d="M-50 250 C 240 180, 440 290, 680 220 S 1040 150, 1250 230"/>
+      <path d="M-50 190 C 260 130, 480 230, 720 170 S 1060 100, 1250 175"/>
+    </g>
+  </svg>
+  <div class="shell">
+    <span class="eyebrow">Your flight plan</span>
+    <h1>AI Engineering.<br><em>From the sky to the ground.</em></h1>
+    <p class="sub">New to AI? Start here. We'll fly over the whole field first, then descend step by step — until you can see exactly how a real AI system works and what to learn to build one.</p>
+    <div class="tkd">
+      <a class="a1" href="#family"><b>10,000 FT</b>AI → ML → DL → Gen AI</a>
+      <a class="a2" href="#map"><b>5,000 FT</b>Inside a Gen AI system</a>
+      <a class="a3" href="#trace"><b>1,000 FT</b>Follow one question</a>
+      <a class="a4" href="#path"><b>GROUND</b>Your learning path</a>
+    </div>
+    <div class="hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 11.5a3 3 0 1 1 4.2 2.75c-.7.3-1.2.95-1.2 1.75v.5"/><circle cx="12" cy="19.5" r=".6" fill="#fbbf24"/><circle cx="12" cy="12" r="10"/></svg>
+      Almost everything on this page is clickable — tap a box to explore it.
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+<!-- ============ FAMILY — 10,000 FT ============ -->
+<section class="sec" id="family">
+  <span class="eyebrow">Altitude · 10,000 ft</span>
+  <h2>The AI family — one inside the other</h2>
+  <p class="lede">AI, Machine Learning, Deep Learning and Generative AI aren't four different things. Each one lives <b>inside</b> the one before it. Click a box to see what it is — or use <b>Go deeper</b> to travel from the outside in.</p>
+
+  <div class="family reveal">
+    <div class="nest" id="nest">
+      <button class="ring h-input" data-lv="ai" aria-pressed="false">
+        <span class="rl"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>Artificial Intelligence</span>
+        <span class="rl"><small>Machines that act smart</small></span>
+      </button>
+      <button class="ring h-app" data-lv="ml" aria-pressed="false">
+        <span class="rl"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></span>Machine Learning</span>
+        <span class="rl"><small>Learns patterns from examples</small></span>
+      </button>
+      <button class="ring h-orch" data-lv="dl" aria-pressed="false">
+        <span class="rl"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="m7 7 3.5 3.5M7 17l3.5-3.5M13.5 10.5 17 7M13.5 13.5 17 17"/></svg></span>Deep Learning</span>
+        <span class="rl"><small>Many-layered neural networks</small></span>
+      </button>
+      <button class="ring h-llm" data-lv="gen" aria-pressed="false">
+        <span class="rl"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8Z"/><path d="M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8Z"/></svg></span>Generative AI</span>
+        <span class="rl"><small>Creates new content</small></span>
+        <span class="ex"><i>ChatGPT</i><i>Claude</i><i>Gemini</i></span>
+      </button>
+    </div>
+
+    <div class="lvl" id="lvl" aria-live="polite"></div>
+  </div>
+
+  <div class="timeline reveal">
+    <div class="tl-h">How we got here — click a year</div>
+    <ol class="tl" id="tl"></ol>
+  </div>
+</section>
+
+<!-- ============ MAP — 5,000 FT ============ -->
+<section class="sec" id="map">
+  <span class="eyebrow">Altitude · 5,000 ft</span>
+  <h2>Inside a Gen AI system — five layers</h2>
+  <p class="lede">An app like ChatGPT is much more than a model. <b>Inputs</b> come in on the left, <b>five layers</b> in the centre do the work, and <b>outputs</b> go out on the right. Click any box to look inside.</p>
+
+  <div class="map">
+
+    <!-- LEFT: INPUTS -->
+    <div class="railcol reveal">
+      <span class="side-tag">In <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12h14m0 0-5-5m5 5-5 5"/></svg></span>
+      <button class="card h-input" data-layer="inputs" aria-haspopup="dialog">
+        <div class="bar"></div>
+        <div class="pad">
+          <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>Inputs</span>
+          <span class="open">+</span>
+          <h3>What goes in</h3>
+          <ul class="mini">
+            <li>User questions &amp; goals</li>
+            <li>Documents — PDF, docs, reports</li>
+            <li>Databases — SQL / NoSQL</li>
+            <li>APIs &amp; live web data</li>
+            <li>Images, audio, logs</li>
+          </ul>
+        </div>
+      </button>
+    </div>
+
+    <!-- CENTER: FIVE LAYERS -->
+    <div class="stack reveal">
+
+      <button class="card h-app" data-layer="app" aria-haspopup="dialog">
+        <div class="bar"></div>
+        <div class="pad">
+          <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></span>Application layer<span class="no">Layer 1</span></span>
+          <span class="open">+</span>
+          <h3>What users see</h3>
+          <p class="what">The friendly face of your AI system.</p>
+          <div class="pills"><i>Web apps</i><i>Chatbots</i><i>AI copilots</i><i>Mobile apps</i><i>Automations</i></div>
+        </div>
+      </button>
+
+      <span class="flow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 4v14m0 0 5-5m-5 5-5-5"/></svg></span>
+
+      <div class="orch-wrap">
+        <button class="orch-head" data-layer="orch" aria-haspopup="dialog">
+          <span class="t"><span class="n">LAYER 2</span>Orchestration layer <small>— the coordinator</small></span>
+          <span class="more">Deep dive +</span>
+        </button>
+        <div class="orch-grid">
+          <button class="card h-orch" data-layer="memory" aria-haspopup="dialog">
+            <div class="bar"></div><div class="pad">
+              <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 4a4 4 0 0 0-4 4v1a3 3 0 0 0-2 5 3 3 0 0 0 2 5v1a4 4 0 0 0 8 0v-1a3 3 0 0 0 2-5 3 3 0 0 0-2-5V8a4 4 0 0 0-4-4Z"/></svg></span>Memory</span>
+              <h3>Remembers context</h3>
+              <p class="what">Who you are, what was said.</p>
+            </div>
+          </button>
+          <button class="card h-orch" data-layer="chains" aria-haspopup="dialog">
+            <div class="bar"></div><div class="pad">
+              <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M7 8a4 4 0 0 0 0 8h1M17 8a4 4 0 0 1 0 8h-1"/></svg></span>Chains</span>
+              <h3>Fixed workflows</h3>
+              <p class="what">Step 1 → 2 → 3, every time.</p>
+            </div>
+          </button>
+          <button class="card h-orch" data-layer="agents" aria-haspopup="dialog">
+            <div class="bar"></div><div class="pad">
+              <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="5" y="8" width="14" height="10" rx="3"/><path d="M12 8V5m0 0h3m-3 0H9"/><circle cx="9.5" cy="13" r="1" fill="currentColor"/><circle cx="14.5" cy="13" r="1" fill="currentColor"/></svg></span>Agents</span>
+              <h3>Plan &amp; decide</h3>
+              <p class="what">Figures out its own steps.</p>
+            </div>
+          </button>
+          <button class="card h-orch" data-layer="tools" aria-haspopup="dialog">
+            <div class="bar"></div><div class="pad">
+              <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14.5 6.5a4 4 0 0 0-5.6 5L4 16.4V20h3.6l4.9-4.9a4 4 0 0 0 5-5.6L14 13l-3-3 3.5-3.5Z"/></svg></span>Tools</span>
+              <h3>Take actions</h3>
+              <p class="what">APIs, search, code, email.</p>
+            </div>
+          </button>
+        </div>
+        <button class="card h-llm llm-plate" data-layer="llm" aria-haspopup="dialog">
+          <div class="pad">
+            <span class="brain"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9.5 4A3.5 3.5 0 0 0 6 7.5c-1.7.4-3 1.9-3 3.8 0 1.2.5 2.2 1.3 2.9A3.9 3.9 0 0 0 7 20.5c1 0 1.9-.4 2.5-1V4ZM14.5 4A3.5 3.5 0 0 1 18 7.5c1.7.4 3 1.9 3 3.8 0 1.2-.5 2.2-1.3 2.9A3.9 3.9 0 0 1 17 20.5c-1 0-1.9-.4-2.5-1V4Z"/></svg></span>
+            <div>
+              <h3>LLM — the brain it coordinates</h3>
+              <p class="what">Understands · reasons · plans · writes</p>
+            </div>
+            <span class="open">+</span>
+          </div>
+        </button>
+      </div>
+
+      <span class="flow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 20V6m0 0 5 5m-5-5-5 5"/></svg></span>
+
+      <button class="card h-rag" data-layer="rag" aria-haspopup="dialog">
+        <div class="bar"></div>
+        <div class="pad">
+          <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Zm0 0a2 2 0 0 1 2-2h13"/></svg></span>Knowledge layer · RAG<span class="no">Layer 3</span></span>
+          <span class="open">+</span>
+          <h3>How the system knows</h3>
+          <p class="what">Feeds the LLM facts from <b>your</b> data, so it answers from truth — not memory.</p>
+          <div class="pipe">
+            <i>Ingest</i><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>
+            <i>Chunk</i><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>
+            <i>Embed</i><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>
+            <i>Store</i><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>
+            <i>Retrieve</i><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>
+            <i>Augment</i>
+          </div>
+        </div>
+      </button>
+
+      <span class="flow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 20V6m0 0 5 5m-5-5-5 5"/></svg></span>
+
+      <button class="card h-found" data-layer="foundation" aria-haspopup="dialog">
+        <div class="bar"></div>
+        <div class="pad">
+          <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="14" width="18" height="7" rx="1"/><rect x="5" y="8" width="14" height="4" rx="1"/><rect x="8" y="3" width="8" height="3" rx="1"/></svg></span>Infrastructure layer<span class="no">Layer 4</span></span>
+          <span class="open">+</span>
+          <h3>The engine room</h3>
+          <p class="what">Everything above runs on this: model providers, cloud, data stores, compute.</p>
+          <div class="pills"><i>Model providers</i><i>Cloud platforms</i><i>Vector DBs</i><i>GPUs / compute</i><i>Containers</i></div>
+        </div>
+      </button>
+
+      <span class="watch">watches every layer above</span>
+
+      <button class="card h-gov" data-layer="ops" aria-haspopup="dialog">
+        <div class="bar"></div>
+        <div class="pad">
+          <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Observability &amp; Ops · LLMOps<span class="no">Layer 5</span></span>
+          <span class="open">+</span>
+          <h3>The control room</h3>
+          <p class="what">Turns a demo into a product people can trust.</p>
+          <div class="pills"><i>Monitoring &amp; tracing</i><i>Evaluation</i><i>Guardrails</i><i>Cost control</i><i>Security</i></div>
+        </div>
+      </button>
+    </div>
+
+    <!-- RIGHT: OUTPUTS -->
+    <div class="railcol reveal">
+      <span class="side-tag">Out <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12h14m0 0-5-5m5 5-5 5"/></svg></span>
+      <button class="card h-out" data-layer="outputs" aria-haspopup="dialog">
+        <div class="bar"></div>
+        <div class="pad">
+          <span class="kicker"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 21V9m0 0-4 4m4-4 4 4"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg></span>Outputs</span>
+          <span class="open">+</span>
+          <h3>What comes out</h3>
+          <ul class="mini">
+            <li>Natural-language answers</li>
+            <li>Reports &amp; summaries</li>
+            <li>Generated code, images</li>
+            <li>Completed tasks</li>
+            <li>Emails, alerts, API actions</li>
+          </ul>
+        </div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRACE — 1,000 FT ============ -->
+<section class="sec" id="trace">
+  <span class="eyebrow">Altitude · 1,000 ft</span>
+  <h2>Follow one question through every layer</h2>
+  <p class="lede">Here's an everyday example — a question anyone might ask an online store's support chat. Press <b>Play</b> and watch the map light up — on the right you'll see what each layer does and exactly what it passes to the next.</p>
+
+  <div class="trace-box reveal">
+    <div class="trace-q">
+      <span class="avatar">You</span>
+      <p><b>"Can I still return the shoes I ordered? Email me the steps."</b><br><span style="color:#9aa6cf;font-size:13px">One sentence from you — nine steps across the system.</span></p>
+    </div>
+
+    <div class="trace-grid">
+      <div class="mm-wrap">
+        <div class="mm-h">The 5,000 ft map, live</div>
+        <div class="mm" aria-hidden="true">
+          <div class="mm-box mm-side h-input" data-mm="inputs">Input</div>
+          <div class="mm-center">
+            <div class="mm-box h-app" data-mm="app">1 · Application</div>
+            <div class="mm-box mm-orch h-orch" data-mm="orch">2 · Orchestration
+              <div class="mm-subs">
+                <span class="mm-box h-orch" data-mm="memory">Memory</span>
+                <span class="mm-box h-orch" data-mm="chains">Chains</span>
+                <span class="mm-box h-orch" data-mm="agents">Agents</span>
+                <span class="mm-box h-orch" data-mm="tools">Tools</span>
+              </div>
+              <span class="mm-box mm-llm h-llm" data-mm="llm">LLM</span>
+            </div>
+            <div class="mm-box h-rag" data-mm="rag">3 · Knowledge</div>
+            <div class="mm-box h-found" data-mm="foundation">4 · Infrastructure</div>
+            <div class="mm-box h-gov" data-mm="ops">5 · Observability &amp; Ops</div>
+          </div>
+          <div class="mm-box mm-side h-out" data-mm="outputs">Output</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tnarr" aria-live="polite">
+          <div class="step-tag" id="sayTag">Ready</div>
+          <h3 id="sayTitle">One question, every layer</h3>
+          <p id="sayText">Press <b>Play the journey</b> to follow the question step by step — or click a numbered step below.</p>
+          <div class="packet" id="packet" hidden>
+            <span class="pk-lab"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>What's being passed along</span>
+            <pre id="pkText"></pre>
+          </div>
+        </div>
+        <div class="tdots" id="tdots"></div>
+      </div>
+    </div>
+
+    <div class="trace-ctl">
+      <button class="btn primary" id="playBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 5v14l12-7-12-7Z"/></svg><span>Play the journey</span></button>
+      <button class="btn ghost" id="prevBtn">← Back</button>
+      <button class="btn ghost" id="stepBtn">Next →</button>
+      <button class="btn ghost" id="resetBtn">↺ Reset</button>
+      <span class="prog" id="prog">STEP 0 / 9</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LEARNING PATH — GROUND ============ -->
+<section class="sec" id="path">
+  <span class="eyebrow">Ground level</span>
+  <h2>Your learning path — the same journey, on foot</h2>
+  <p class="lede">Learn it in the order you just flew it. <b>Part A</b> walks down the AI family (10,000 ft). <b>Part B</b> builds the five Gen AI layers (5,000 ft) — ending with the exact support bot you watched at 1,000 ft. Every phase ends with a project.</p>
+
+  <div class="path reveal">
+    <div class="pgroup">Part A · Understand <em>— down the AI family</em></div>
+
+    <div class="pstep h-found"><span class="num"></span><div class="body">
+      <div class="ph"><div><small>Before you take off</small><h3>Foundations — Python, data &amp; a little maths</h3></div><span class="dur">~4–6 weeks</span></div>
+      <p>Python basics, working with tables in pandas and SQL, and just enough maths — averages, probability and vectors. Everything after this stands on it.</p>
+      <div class="pills"><i>Python</i><i>Jupyter</i><i>pandas</i><i>SQL</i><i>Git &amp; GitHub</i></div>
+      <div class="proj"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span><b>Build:</b> analyse a sales or expenses CSV and chart the top items.</span></div>
+    </div></div>
+
+    <div class="pstep h-app"><span class="num"></span><div class="body">
+      <div class="ph"><div><small>Machine Learning</small><h3>Teach a machine with examples</h3></div><span class="dur">~4–6 weeks</span></div>
+      <p>Supervised vs unsupervised learning, regression and classification, train/test split, and how to measure a model (accuracy, precision, recall). Learn to think: data → model → prediction.</p>
+      <div class="pills"><i>scikit-learn</i><i>matplotlib</i><i>Kaggle</i></div>
+      <div class="proj"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span><b>Build:</b> a spam-message classifier, or a house-price predictor.</span></div>
+    </div></div>
+
+    <div class="pstep h-orch"><span class="num"></span><div class="body">
+      <div class="ph"><div><small>Deep Learning</small><h3>Neural networks &amp; how they learn</h3></div><span class="dur">~4 weeks</span></div>
+      <p>Neurons and layers, how training works (intuition first, not heavy maths), CNNs for images, embeddings — and the idea of <b>attention</b> behind Transformers.</p>
+      <div class="pills"><i>PyTorch</i><i>Google Colab</i><i>Hugging Face</i></div>
+      <div class="proj"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span><b>Build:</b> an image classifier using a pre-trained model (transfer learning).</span></div>
+    </div></div>
+
+    <div class="pstep h-llm"><span class="num"></span><div class="body">
+      <div class="ph"><div><small>Generative AI</small><h3>LLMs, prompts &amp; embeddings</h3></div><span class="dur">~3 weeks</span></div>
+      <p>How LLMs work — tokens, context window, temperature. Call a model through an API, learn prompting (system prompts, few-shot examples, JSON output) and turn text into embeddings.</p>
+      <div class="pills"><i>Claude API</i><i>OpenAI API</i><i>Gemini API</i><i>Ollama</i></div>
+      <div class="proj"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span><b>Build:</b> a resume reviewer that scores a CV and suggests improvements.</span></div>
+    </div></div>
+
+    <div class="pgroup">Part B · Build <em>— the five Gen AI layers</em></div>
+
+    <div class="pstep h-rag"><span class="num"></span><div class="body">
+      <div class="ph"><div><small>Gen AI engineering</small><h3>Build the 5 layers, one at a time</h3></div><span class="dur">~6–8 weeks</span></div>
+      <p>Grow one project layer by layer, in the order engineers actually build it. Tap a layer to revisit what it does.</p>
+      <ol class="build">
+        <li><button class="h-app" data-layer="app" aria-haspopup="dialog"><span class="bn">1</span><span><b>Application</b><span class="d">A chat web app with history</span></span><span class="tl-pills">Streamlit · Gradio</span></button></li>
+        <li><button class="h-rag" data-layer="rag" aria-haspopup="dialog"><span class="bn">2</span><span><b>Knowledge (RAG)</b><span class="d">Answer from your own PDFs</span></span><span class="tl-pills">LlamaIndex · Chroma</span></button></li>
+        <li><button class="h-orch" data-layer="orch" aria-haspopup="dialog"><span class="bn">3</span><span><b>Orchestration</b><span class="d">Memory, tools, agents &amp; MCP</span></span><span class="tl-pills">LangGraph · MCP</span></button></li>
+        <li><button class="h-found" data-layer="foundation" aria-haspopup="dialog"><span class="bn">4</span><span><b>Infrastructure</b><span class="d">Package it and put it on the cloud</span></span><span class="tl-pills">FastAPI · Docker · AWS</span></button></li>
+        <li><button class="h-gov" data-layer="ops" aria-haspopup="dialog"><span class="bn">5</span><span><b>Observability &amp; Ops</b><span class="d">Trace it, test it, watch the cost</span></span><span class="tl-pills">Langfuse · Ragas</span></button></li>
+      </ol>
+      <div class="proj"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span><b>Build:</b> the Customer Support Bot from the 1,000 ft journey — end to end.</span></div>
+    </div></div>
+
+    <div class="pstep h-out last"><span class="num"></span><div class="body">
+      <div class="ph"><div><small>Job-ready</small><h3>Portfolio &amp; capstone</h3></div><span class="dur">ongoing</span></div>
+      <p>Put three projects on GitHub with clear READMEs and a 2-minute demo video. Post what you built on LinkedIn. Practise explaining your design choices — that's what interviews test.</p>
+      <div class="pills"><i>GitHub</i><i>LinkedIn</i><i>Hugging Face Spaces</i></div>
+      <div class="proj"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg><span><b>Build:</b> a capstone that solves a real problem — at work, in your community or for a local business.</span></div>
+    </div></div>
+  </div>
+
+  <div class="takeaway reveal">
+    <span class="eyebrow">Key takeaway</span>
+    <p>AI ⊃ Machine Learning ⊃ Deep Learning ⊃ <b>Generative AI</b>. A Gen AI system is <b>inputs → five layers → outputs</b>. Understand it from the top down — then build it from the ground up, one layer at a time.</p>
+  </div>
+</section>
+
+<footer class="credits"><b>Anil Kumar Sandrapuri</b> · DevPro Academy<br>Interactive guide · click anything to explore</footer>
+</main>
+
+<!-- ============ MODAL ============ -->
+<div class="backdrop" id="backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" id="modal">
+    <div class="m-head" id="mHead">
+      <span class="alt" id="mAlt"></span>
+      <h3 id="mTitle"></h3>
+      <p class="tag" id="mTag"></p>
+      <button class="m-close" id="mClose" aria-label="Close">✕</button>
+    </div>
+    <div class="m-body" id="mBody"></div>
+  </div>
+</div>
+<script>
+/* ================= ICONS ================= */
+const ICONS = {
+  inputs:'<path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  app:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/>',
+  orch:'<circle cx="12" cy="12" r="3"/><path d="M12 3v4m0 10v4M3 12h4m10 0h4"/>',
+  memory:'<path d="M12 4a4 4 0 0 0-4 4v1a3 3 0 0 0-2 5 3 3 0 0 0 2 5v1a4 4 0 0 0 8 0v-1a3 3 0 0 0 2-5 3 3 0 0 0-2-5V8a4 4 0 0 0-4-4Z"/>',
+  chains:'<path d="M9 12h6M7 8a4 4 0 0 0 0 8h1M17 8a4 4 0 0 1 0 8h-1"/>',
+  agents:'<rect x="5" y="8" width="14" height="10" rx="3"/><path d="M12 8V5m0 0h3m-3 0H9"/><circle cx="9.5" cy="13" r="1"/><circle cx="14.5" cy="13" r="1"/>',
+  tools:'<path d="M14.5 6.5a4 4 0 0 0-5.6 5L4 16.4V20h3.6l4.9-4.9a4 4 0 0 0 5-5.6L14 13l-3-3 3.5-3.5Z"/>',
+  llm:'<path d="M9.5 4A3.5 3.5 0 0 0 6 7.5c-1.7.4-3 1.9-3 3.8 0 1.2.5 2.2 1.3 2.9A3.9 3.9 0 0 0 7 20.5c1 0 1.9-.4 2.5-1V4ZM14.5 4A3.5 3.5 0 0 1 18 7.5c1.7.4 3 1.9 3 3.8 0 1.2-.5 2.2-1.3 2.9A3.9 3.9 0 0 1 17 20.5c-1 0-1.9-.4-2.5-1V4Z"/>',
+  rag:'<path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Zm0 0a2 2 0 0 1 2-2h13"/>',
+  foundation:'<rect x="3" y="14" width="18" height="7" rx="1"/><rect x="5" y="8" width="14" height="4" rx="1"/><rect x="8" y="3" width="8" height="3" rx="1"/>',
+  outputs:'<path d="M12 21V9m0 0-4 4m4-4 4 4"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/>',
+  ops:'<path d="M3 12h4l3-8 4 16 3-8h4"/>'
+};
+const BULB='<span class="bulb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 18h6m-5 3h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.5 1 2.5h6c0-1 .3-1.9 1-2.5A6 6 0 0 0 12 3Z"/></svg></span>';
+
+/* ================= 10,000 FT — AI FAMILY ================= */
+const ORDER=['ai','ml','dl','gen'];
+const LV={
+ai:{hue:'h-input',short:'AI',name:'Artificial Intelligence',q:'Can a machine act smart?',
+ def:'The big umbrella: any technique that makes a computer do something we would call “intelligent” — understand, decide, plan, recognise, converse. Early AI was mostly <b>rules written by humans</b>.',
+ analogy:'<b>Think of a recipe book:</b> classic AI follows instructions people wrote down — “if the opponent moves here, move there.” It looks smart, but every rule was typed by a person.',
+ how:['Humans write the rules: if-this-then-that, search, logic','Works well when the rules are clear — chess, route-finding, timetables','Breaks when the world gets messy — no one can write a rule for every handwriting style'],
+ ex:['Chess engines','Google Maps routes','Rule-based chatbots','Game characters'],
+ yr:'1956',mile:'The term “Artificial Intelligence” is coined at the Dartmouth workshop. In 1997, IBM’s Deep Blue beats world chess champion Garry Kasparov.',
+ next:'What if the machine could write its own rules?'},
+ml:{hue:'h-app',short:'ML',name:'Machine Learning',q:'Can it learn from examples?',
+ def:'A branch of AI where the computer <b>learns patterns from examples</b> instead of being given rules. Show it enough data with the right answers, and it works out the rule itself.',
+ analogy:'<b>Think of learning to pick a ripe mango:</b> nobody gives you a rulebook. You see hundreds of mangoes, someone says “ripe” or “not ripe,” and your brain learns the pattern. ML does the same with data.',
+ how:['Give it examples with answers — e.g. 10,000 emails marked spam / not spam','The algorithm finds the pattern and saves it as a model','The model predicts answers for new data it has never seen','Humans still choose which clues (features) to look at — price, size, word counts'],
+ ex:['Gmail spam filter','Netflix / Amazon recommendations','Loan approval scoring','House-price prediction'],
+ yr:'1959',mile:'Arthur Samuel coins “machine learning” for a checkers program that got better by playing against itself.',
+ next:'What if it could find the clues on its own, too?'},
+dl:{hue:'h-orch',short:'DL',name:'Deep Learning',q:'Can it learn from raw data by itself?',
+ def:'A branch of ML that uses <b>neural networks with many layers</b>, loosely inspired by the brain. It learns straight from raw data — pixels, sound, text — and discovers the important clues by itself.',
+ analogy:'<b>Think of how a child recognises a face:</b> first edges and shapes, then eyes and a nose, then “that’s a familiar face!” Each layer of a deep network learns one level of that picture — simple at the bottom, meaningful at the top.',
+ how:['Many layers of artificial “neurons” pass signals forward','Early layers spot simple patterns, deeper layers spot complex ones','No hand-picked features — it learns them from raw input','Needs lots of data and powerful GPUs to train'],
+ ex:['Face unlock','Google Lens','Voice typing','Medical X-ray screening'],
+ yr:'2012',mile:'AlexNet, a deep network trained on GPUs, wins the ImageNet image-recognition contest by a huge margin — the deep learning boom begins.',
+ next:'What if it could create things, not just recognise them?'},
+gen:{hue:'h-llm',short:'Gen AI',name:'Generative AI',q:'Can it create something new?',
+ def:'A branch of deep learning whose models <b>create new content</b> — text, code, images, audio, video. Large Language Models (LLMs) are trained on huge amounts of text to predict the next word — so well that they can explain, write and reason.',
+ analogy:'<b>Earlier AI was a judge; Gen AI is an author.</b> A classic model reads an email and says “spam.” A generative model writes the email for you — in any tone, any language.',
+ how:['Built on the Transformer (2017), which uses “attention” to read a whole passage at once','Pre-trained on internet-scale data, then tuned to follow instructions','Generates output one token (a word-piece) at a time','You talk to it in plain language — that’s the prompt'],
+ ex:['ChatGPT','Claude','Gemini','GitHub Copilot','Midjourney (images)','Suno (music)'],
+ yr:'2022',mile:'Google’s 2017 Transformer paper makes it possible; ChatGPT’s launch in November 2022 puts Gen AI in everyone’s hands.',
+ next:null}
+};
+const TL=[
+ {y:'1956',lv:'ai',t:'“Artificial Intelligence” is named'},
+ {y:'1959',lv:'ml',t:'“Machine learning” is named'},
+ {y:'1997',lv:'ai',t:'Deep Blue beats Kasparov at chess'},
+ {y:'2012',lv:'dl',t:'AlexNet starts the deep learning boom'},
+ {y:'2017',lv:'gen',t:'Transformer — “Attention is all you need”'},
+ {y:'2022',lv:'gen',t:'ChatGPT launches'}
+];
+const rings=[...document.querySelectorAll('.ring')];
+const lvlEl=document.getElementById('lvl');
+const tlEl=document.getElementById('tl');
+tlEl.innerHTML=TL.map((e,i)=>`<li><button class="${LV[e.lv].hue}" data-lv="${e.lv}" data-i="${i}"><b>${e.y}</b><span>${e.t}</span></button></li>`).join('');
+const tlBtns=[...tlEl.querySelectorAll('button')];
+
+function showLevel(k,tlIndex){
+  const d=LV[k],i=ORDER.indexOf(k);
+  rings.forEach(r=>{const on=r.dataset.lv===k; r.classList.toggle('on',on); r.setAttribute('aria-pressed',on);});
+  tlBtns.forEach((b,j)=>b.classList.toggle('on',tlIndex!=null?j===tlIndex:b.dataset.lv===k));
+  lvlEl.className='lvl '+d.hue;
+  const crumbs=ORDER.map((o,j)=>`<span class="${j===i?'cur':''}">${LV[o].short}</span>`).join('<span>›</span>');
+  const nextBtn=d.next
+    ? `<button class="lbtn go" data-step="1">Go deeper: ${LV[ORDER[i+1]].short} ↓</button>`
+    : `<a class="lbtn go" href="#map">Zoom into a Gen AI system — 5,000 ft →</a>`;
+  lvlEl.innerHTML=`<div class="bar"></div><div class="pad">
+    <div class="crumbs">${crumbs}</div>
+    <h3>${d.name}</h3>
+    <span class="q">${d.q}</span>
+    <p class="def">${d.def}</p>
+    <div class="analogy">${BULB}<span>${d.analogy}</span></div>
+    <div class="m-sec">How it works</div>
+    <ul class="does">${d.how.map(x=>`<li><span>${x}</span></li>`).join('')}</ul>
+    <div class="m-sec">You've already used it</div>
+    <div class="ex">${d.ex.map(x=>`<i>${x}</i>`).join('')}</div>
+    <div class="mile"><b class="yr">${d.yr}</b><span>${d.mile}</span></div>
+    ${d.next?`<p class="def" style="margin-top:14px"><b>Next question:</b> ${d.next}</p>`:''}
+    <div class="nav">
+      <button class="lbtn" data-step="-1" ${i===0?'disabled':''}>↑ Up a level</button>
+      ${nextBtn}
+    </div></div>`;
+  lvlEl.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>showLevel(ORDER[i+(+b.dataset.step)])));
+}
+rings.forEach(r=>r.addEventListener('click',()=>showLevel(r.dataset.lv)));
+tlBtns.forEach(b=>b.addEventListener('click',()=>showLevel(b.dataset.lv,+b.dataset.i)));
+showLevel('ai');
+
+/* ================= 5,000 FT — LAYER DATA ================= */
+const L = {
+inputs:{hue:'h-input',name:'Inputs — what the system uses',tag:'Raw material in: questions, files, data streams.',
+ analogy:'<b>Think of a restaurant kitchen:</b> inputs are the groceries arriving at the back door. Nothing gets cooked without them — and the quality of what goes in limits the quality of what comes out.',
+ does:['Captures the user\u2019s question, request or goal','Brings in documents — PDFs, Word files, slides, reports','Connects to databases (SQL / NoSQL) and enterprise systems','Pulls live data from websites and APIs','Streams signals from sensors, IoT devices and logs'],
+ tools:[['Files & docs','PDF / DOCX / PPTX','The most common enterprise input — reports, contracts, manuals'],['Databases','PostgreSQL, MongoDB','Structured business data the AI can query'],['Live data','REST APIs, webhooks','Real-time prices, weather, tickets, CRM records'],['Streams','Kafka, IoT telemetry','Continuous signals from devices and systems']],
+ tip:'Beginner tip: start with one simple input — a folder of 5 PDFs. Master that before touching databases or streams.',
+ connects:['app','rag']},
+
+app:{hue:'h-app',name:'Application layer — what users see',tag:'The friendly face: chat windows, copilots, dashboards.',
+ analogy:'<b>Think of it as the front desk of a hotel:</b> guests never see the kitchen, laundry or wiring — they just talk to a friendly person who makes everything behind the scenes feel simple.',
+ does:['Gives users a place to ask: chat UI, web app, mobile app','Embeds AI inside existing products as a copilot','Shows results clearly — text, tables, charts, files','Triggers automations and workflows without any chat at all'],
+ tools:[['UI','Streamlit','Turn a Python script into a web app in minutes — the beginner favourite'],['UI','Gradio','Quick ML demos and chat interfaces, powers Hugging Face Spaces'],['UI','Chainlit','Purpose-built chat UIs for LLM apps'],['Web','React / Next.js','Production-grade custom web frontends'],['Web','Vercel AI SDK','Streaming chat UIs for React with a few lines of code'],['Low-code','Microsoft Copilot Studio','Build enterprise copilots without deep coding'],['Automation','n8n / Zapier','AI inside no-code business workflows']],
+ tip:'Beginner tip: your first app should be Streamlit + one LLM call. Ship something ugly that works, today.',
+ connects:['orch','outputs']},
+
+orch:{hue:'h-orch',name:'Orchestration layer — the coordinator',tag:'The conductor: connects LLM, memory, data and tools into one working system.',
+ analogy:'<b>Think of an orchestra conductor:</b> the violin (LLM) is brilliant alone, but the conductor decides when it plays, brings in the drums (tools), reads the score (memory), and keeps everyone in sync to produce one piece of music.',
+ does:['Receives the request from the application layer','Decides what\u2019s needed: memory? retrieval? a tool? just the LLM?','Passes context between components in the right order','Handles retries, errors and streaming back to the user','Hosts the four specialists: Memory, Chains, Agents and Tools'],
+ tools:[['Framework','LangChain','The most popular glue framework — huge ecosystem, great for learning'],['Framework','LlamaIndex','Data-first orchestration, exceptional for RAG pipelines'],['Framework','Semantic Kernel','Microsoft\u2019s enterprise orchestration SDK (.NET & Python)'],['Framework','Haystack','Production-grade pipelines by deepset'],['Framework','DSPy','Program prompts declaratively instead of hand-writing them'],['DIY','Plain Python','Many pros orchestrate with simple code — frameworks are optional']],
+ tip:'Beginner tip: don\u2019t fear the framework wars. Learn LangChain basics first, and remember plain Python is always a valid orchestrator.',
+ connects:['memory','chains','agents','tools','llm']},
+
+memory:{hue:'h-orch',name:'Memory — remembers context',tag:'Without memory, every message is a first date.',
+ analogy:'<b>Think of a waiter\u2019s notepad:</b> without it, you\u2019d repeat your order every time they returned to the table. Memory lets the system recall the conversation, your preferences, and facts about you.',
+ does:['Conversation memory — what was said earlier in this chat','User memory — preferences and facts across sessions','Entity memory — tracks people, projects, things mentioned','Vector memory — searches old context semantically'],
+ tools:[['Built-in','LangChain Memory','Ready-made conversation memory classes'],['Service','Mem0','A dedicated memory layer that learns about your users'],['Service','Zep','Long-term memory with fact extraction and summaries'],['Framework','Letta (MemGPT)','Agents that manage their own memory like an OS'],['Pattern','LangGraph checkpoints','Saves full agent state so work can pause and resume']],
+ tip:'Beginner tip: start simple — keep the last N messages in a Python list and send them with each prompt. That IS memory.',
+ connects:['orch','llm']},
+
+chains:{hue:'h-orch',name:'Chains / Workflows — fixed recipes',tag:'Deterministic steps: same order, every time.',
+ analogy:'<b>Think of an assembly line:</b> station 1 summarises, station 2 translates, station 3 formats. Predictable, testable, reliable — perfect when you already know the steps.',
+ does:['Runs a fixed sequence: prompt → LLM → parse → next step','Combines LLM calls with data lookups and tool calls','Great for repeatable jobs: summarise → classify → route','Easier to test and debug than free-roaming agents'],
+ tools:[['Framework','LangChain LCEL','Pipe-style chains: prompt | model | parser'],['Framework','LlamaIndex Pipelines','Query pipelines optimised for data workflows'],['Visual','n8n / Flowise','Drag-and-drop LLM workflow builders'],['Pattern','Prompt chaining','Feed one model\u2019s output into the next prompt — no framework needed']],
+ tip:'Beginner tip: use a chain when you can write the steps on paper beforehand. If you can\u2019t, you may need an agent.',
+ connects:['agents','orch']},
+
+agents:{hue:'h-orch',name:'Agents — plan & execute',tag:'The system decides its own steps to reach a goal.',
+ analogy:'<b>Think of a junior employee vs a vending machine:</b> a chain is the vending machine (press B4, get B4). An agent is the employee — you give a goal, they figure out the steps, use tools, check results, and iterate until it\u2019s done.',
+ does:['Understands the goal and breaks it into steps','Chooses which tool to use at each moment','Executes, observes the result, and adjusts the plan','Loops until the task is complete (or asks for help)','Multi-agent teams: specialists that collaborate'],
+ tools:[['Framework','LangGraph','Graph-based agents with state — the current production favourite'],['Framework','CrewAI','Role-playing agent teams: researcher + writer + reviewer'],['Framework','AutoGen','Microsoft\u2019s multi-agent conversation framework'],['SDK','OpenAI Agents SDK','Lightweight agents with handoffs and guardrails'],['SDK','Claude Agent SDK','Anthropic\u2019s SDK for building capable agents'],['Framework','PydanticAI','Type-safe agents for production Python'],['Minimal','smolagents','Hugging Face\u2019s tiny code-first agent library']],
+ tip:'Beginner tip: an agent is just a while-loop: LLM picks a tool → run it → feed the result back → repeat. Build one by hand once and the magic disappears.',
+ connects:['tools','llm','chains']},
+
+tools:{hue:'h-orch',name:'Tools — the hands of the system',tag:'How the AI acts on the world instead of just talking about it.',
+ analogy:'<b>Think of a brilliant advisor locked in a room with only a phone:</b> the LLM can\u2019t click, search or send anything itself — tools are the phone lines it uses to get things done in the real world.',
+ does:['Calls APIs: CRM, calendar, email, payment systems','Runs code and calculators for exact answers','Searches the web and internal systems','Queries databases with generated SQL','Operates external systems: files, browsers, apps'],
+ tools:[['Standard','MCP (Model Context Protocol)','The open “USB-C of AI” — one standard to plug tools into any model'],['Native','Function calling','The model outputs JSON saying which function to run with which arguments'],['Integration','REST APIs','Any existing API becomes an AI capability'],['Hub','Composio / Zapier','Hundreds of ready-made app integrations for agents'],['Compute','Code interpreters','Sandboxed Python for maths, files and charts'],['Search','Tavily / SerpAPI','Web search built for LLM consumption']],
+ tip:'Beginner tip: your first tool should be a calculator or weather API via function calling. Then learn MCP — it\u2019s becoming the industry standard.',
+ connects:['agents','outputs']},
+
+llm:{hue:'h-llm',name:'LLM — the core brain',tag:'Reasoning, understanding, generation, planning.',
+ analogy:'<b>Think of a brilliant new employee on day one:</b> extremely well-read and articulate, but they know nothing about your company, forget everything overnight, and have no hands. Every other layer exists to fix one of those gaps.',
+ does:['Understands language, code, images and intent','Reasons through problems step by step','Generates answers, documents, code and plans','Powers every other layer — agents, chains and RAG all route through it'],
+ tools:[['Frontier','Claude (Anthropic)','Strong reasoning, coding and agentic work; large context windows'],['Frontier','GPT-5 (OpenAI)','Widely used general-purpose frontier model family'],['Frontier','Gemini (Google)','Multimodal strength and deep Google integration'],['Open','Llama (Meta)','The leading open-weight family — run it yourself'],['Open','Mistral / Mixtral','Efficient European open models'],['Open','Qwen / DeepSeek','Top open models with strong reasoning at low cost'],['Local','Ollama','Run open models on your own laptop with one command']],
+ tip:'Beginner tip: don\u2019t obsess over “the best model.” Pick one API, learn to prompt it well — skills transfer across all of them.',
+ connects:['orch','rag','memory']},
+
+rag:{hue:'h-rag',name:'Knowledge layer — RAG',tag:'Retrieval-Augmented Generation: how the system knows YOUR data.',
+ analogy:'<b>Think of an open-book exam:</b> instead of forcing the student (LLM) to memorise your company\u2019s documents, you let it look up the right page just before answering. Fewer made-up answers, always up to date.',
+ does:['<b>1 · Ingest</b> — load and clean PDFs, sites, databases','<b>2 · Chunk</b> — split documents into bite-sized pieces','<b>3 · Embed</b> — convert each chunk into a vector (a list of numbers capturing meaning)','<b>4 · Store</b> — save vectors in a vector database','<b>5 · Retrieve</b> — find chunks most similar to the question','<b>6 · Augment</b> — paste those chunks into the LLM prompt as context'],
+ tools:[['Vector DB','Chroma','Simplest local vector store — perfect first project'],['Vector DB','FAISS','Meta\u2019s blazing-fast similarity search library'],['Vector DB','Pinecone','Fully managed cloud vector database'],['Vector DB','Qdrant / Weaviate / Milvus','Popular open-source production vector DBs'],['Vector DB','pgvector','Vectors inside PostgreSQL you already run'],['Embeddings','OpenAI / Voyage AI / Cohere','API embedding models that turn text into vectors'],['Embeddings','BGE / E5','Top open-source embedding models'],['Ingestion','LlamaParse / Unstructured / Docling','Parse messy PDFs and tables into clean text'],['Ingestion','Firecrawl','Turn entire websites into LLM-ready data']],
+ tip:'Beginner tip: build “chat with my PDF” once, by hand, with Chroma — you\u2019ll understand 80% of enterprise AI in a weekend.',
+ connects:['llm','inputs','foundation']},
+
+foundation:{hue:'h-found',name:'Infrastructure — the engine room',tag:'Models, cloud, data stores, compute and frameworks everything runs on.',
+ analogy:'<b>Think of a building\u2019s basement:</b> nobody visits it, but the electricity, water and structure decide whether the penthouse (your app) stands or collapses.',
+ does:['Model providers serve the LLMs via APIs','Cloud platforms host, scale and secure your services','Data stores keep documents, vectors and state','Compute (GPUs / TPUs) powers inference and training','Core frameworks and languages tie it all together'],
+ tools:[['Models','OpenAI · Anthropic · Google · Meta','The main model providers you\u2019ll call'],['Cloud AI','AWS Bedrock','Many models behind one AWS API'],['Cloud AI','Azure AI Foundry','Microsoft\u2019s enterprise AI platform'],['Cloud AI','Google Vertex AI','Google Cloud\u2019s managed AI stack'],['Core','Python + FastAPI','The default language and API framework of AI'],['Deploy','Docker & Kubernetes','Package and scale your services anywhere'],['Compute','GPUs / TPUs · Modal · RunPod','Serverless and rented muscle for heavy workloads'],['Gateway','LiteLLM / OpenRouter','One interface to switch between 100+ models']],
+ tip:'Beginner tip: you only need Python + FastAPI + Docker to be dangerous. Learn cloud platforms when a real project forces you to.',
+ connects:['llm','rag','ops']},
+
+outputs:{hue:'h-out',name:'Outputs / Actions — what it delivers',tag:'The value: answers, reports, completed tasks, real actions.',
+ analogy:'<b>Think of the dishes leaving the kitchen:</b> customers judge the restaurant only by what lands on the table — nobody applauds the oven. Outputs are the entire point of the system.',
+ does:['Natural-language answers and conversations','Reports, insights, summaries and analysis','Completed tasks — the work is simply done','API and system actions in other software','Emails, alerts and notifications sent for you'],
+ tools:[['Use case','AI assistants & copilots','Chat help embedded in products and workflows'],['Use case','Enterprise search (RAG)','“Ask anything about our company documents”'],['Use case','Document Q&A / chat','Interrogate contracts, manuals and reports'],['Use case','Data analysis & insights','Charts and findings from raw data'],['Use case','Automation & workflows','Multi-step business processes run end-to-end'],['Use case','Customer support bots','Resolve tickets with knowledge + actions']],
+ tip:'Beginner tip: define the output before you build anything. “An email with 3 bullet points every Monday 9am” is a better spec than “an AI assistant.”',
+ connects:['app','ops']},
+
+ops:{hue:'h-gov',name:'Observability & Ops — LLMOps',tag:'Monitor, evaluate, guard and control cost. Demo → product.',
+ analogy:'<b>Think of a restaurant health inspector + accountant + security guard in one:</b> quality checks on every dish, an eye on the food budget, and rules on what can never leave the kitchen.',
+ does:['Observability — trace every prompt, response, token and cost','Evaluation — score answers for accuracy, relevance, tone','Guardrails — block unsafe inputs and outputs','Prompt & model management — version and A/B test','Security, privacy & compliance — protect data and users','Feedback loops — learn from real usage and improve'],
+ tools:[['Observability','LangSmith','Tracing and debugging from the LangChain team'],['Observability','Langfuse','Popular open-source LLM observability platform'],['Observability','Helicone / Arize Phoenix','Cost tracking and production monitoring'],['Observability','Weights & Biases','Experiment tracking from ML, extended to LLMs'],['Evaluation','Ragas','The standard for scoring RAG pipeline quality'],['Evaluation','DeepEval / TruLens','Unit-test style evals for LLM outputs'],['Evaluation','promptfoo','Test prompts like you test code, in CI'],['Guardrails','Guardrails AI / NeMo Guardrails','Validate and constrain what models say and do']],
+ tip:'Beginner tip: add Langfuse to your very first project. Watching real traces of prompts, retrievals and costs teaches you more than any tutorial.',
+ connects:['outputs','foundation','app']}
+};
+
+const ALT={inputs:'Left side · what goes in',outputs:'Right side · what comes out',
+ app:'Layer 1 of 5',orch:'Layer 2 of 5',memory:'Layer 2 · inside orchestration',chains:'Layer 2 · inside orchestration',
+ agents:'Layer 2 · inside orchestration',tools:'Layer 2 · inside orchestration',llm:'Layer 2 · inside orchestration',
+ rag:'Layer 3 of 5',foundation:'Layer 4 of 5',ops:'Layer 5 of 5'};
+for(const k in ALT) L[k].alt=ALT[k];
+
+/* ================= MODAL ================= */
+const backdrop=document.getElementById('backdrop'),modal=document.getElementById('modal');
+const mAlt=document.getElementById('mAlt'),mTitle=document.getElementById('mTitle'),
+      mTag=document.getElementById('mTag'),mBody=document.getElementById('mBody');
+let lastFocus=null;
+const NAMES=Object.fromEntries(Object.entries(L).map(([k,v])=>[k,v.name.split(' — ')[0].split(' · ')[0]]));
+
+function openLayer(id){
+  const d=L[id]; if(!d) return;
+  if(!backdrop.classList.contains('show')) lastFocus=document.activeElement;
+  modal.className='modal '+d.hue;
+  mAlt.textContent=d.alt;
+  mTitle.innerHTML=`<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2">${ICONS[id]||''}</svg></span>${d.name}`;
+  mTag.textContent=d.tag;
+  mBody.innerHTML=`
+    <div class="analogy">${BULB}<span>${d.analogy}</span></div>
+    <div class="m-sec">What it does</div>
+    <ul class="does">${d.does.map(x=>`<li><span>${x}</span></li>`).join('')}</ul>
+    <div class="m-sec">Popular tools &amp; frameworks</div>
+    <div class="toolgrid">${d.tools.map(t=>`<div class="tool"><span class="grp">${t[0]}</span><b>${t[1]}</b><span>${t[2]}</span></div>`).join('')}</div>
+    <div class="m-sec">Where to start</div>
+    <div class="tip"><span class="grad"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></span><span>${d.tip}</span></div>
+    <div class="m-sec">Connected — keep exploring</div>
+    <div class="connects">${d.connects.map(c=>`<button data-go="${c}">${NAMES[c]}</button>`).join('')}</div>`;
+  mBody.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>openLayer(b.dataset.go)));
+  mBody.scrollTop=0;
+  backdrop.classList.add('show'); document.body.style.overflow='hidden';
+  document.getElementById('mClose').focus();
+}
+function closeModal(){
+  backdrop.classList.remove('show'); document.body.style.overflow='';
+  if(lastFocus) lastFocus.focus();
+}
+document.querySelectorAll('[data-layer]').forEach(b=>b.addEventListener('click',()=>openLayer(b.dataset.layer)));
+document.getElementById('mClose').addEventListener('click',closeModal);
+backdrop.addEventListener('click',e=>{ if(e.target===backdrop) closeModal(); });
+document.addEventListener('keydown',e=>{
+  if(!backdrop.classList.contains('show')) return;
+  if(e.key==='Escape'){ closeModal(); return; }
+  if(e.key==='Tab'){ // keep focus inside the dialog
+    const f=[...modal.querySelectorAll('button')]; if(!f.length) return;
+    const first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+});
+
+/* ================= 1,000 FT — TRACE ================= */
+const STEPS=[
+ {mm:['inputs'],hue:'h-input',tag:'Input',title:'You ask a question',
+  say:'You open an online store’s support chat and type: <b>“Can I still return the shoes I ordered? Email me the steps.”</b> Your question — plus who you are — is the <b>input</b>.',
+  pk:'question: "Can I still return the shoes I ordered?\n           Email me the steps."\nuser:     customer C-10482 (logged in)'},
+ {mm:['app'],hue:'h-app',tag:'Layer 1 · Application',title:'The app receives it',
+  say:'The <b>chat window on the store’s website</b> is the application layer. It shows your message, attaches your login details, and hands everything backstage. You never see what happens next.',
+  pk:'POST /chat\n{ "user":    "C-10482",\n  "message": "Can I still return the shoes I ordered? ..." }'},
+ {mm:['orch','agents'],hue:'h-orch',tag:'Layer 2 · Orchestration — Agent',title:'The orchestrator makes a plan',
+  say:'The <b>orchestrator</b> is the project manager. Its <b>agent</b> asks the LLM, “What do I need to answer this?” and gets back a plan: find the rule, fetch your order, decide, then email.',
+  pk:'plan:\n  1. find the returns rule        → Knowledge layer\n  2. get this customer’s order    → Tool: orders database\n  3. decide and write the answer  → LLM\n  4. email the return steps       → Tool: email'},
+ {mm:['rag'],hue:'h-rag',tag:'Layer 3 · Knowledge (RAG)',title:'It looks up the rule',
+  say:'The LLM doesn’t know <i>this store’s</i> rules. So the <b>knowledge layer</b> searches the store’s policy documents — already chunked and stored in a vector database — and pulls out the one paragraph that matters.',
+  pk:'search: "return window for shoes"\nfound:  Returns Policy, section 2\n        "Items can be returned within 30 days\n         of delivery, unused and with tags."'},
+ {mm:['orch','tools'],hue:'h-orch',tag:'Layer 2 · Orchestration — Tool',title:'A tool fetches your data',
+  say:'A rule isn’t enough — it needs <b>your</b> order. The agent calls a <b>tool</b>: a function that queries the orders database. The LLM can’t open a database itself; tools are its hands.',
+  pk:'call:   get_order(customer="C-10482", item="shoes")\nresult: { "order": "ORD-7731", "delivered_days_ago": 12 }'},
+ {mm:['orch','llm'],hue:'h-llm',tag:'Layer 2 · Orchestration — LLM',title:'The LLM thinks and writes',
+  say:'Now the <b>LLM</b> has everything: your question, the rule (30 days) and your data (delivered 12 days ago). It reasons — <i>12 is within 30</i> — and writes a clear, friendly reply with what to do next.',
+  pk:'reasoning: 12 days ≤ 30 days → can be returned (18 days left)\ndraft:     "Good news — you can return them! You have\n            18 days left. Keep them unused, with tags."'},
+ {mm:['outputs','tools'],hue:'h-out',tag:'Output',title:'You get the answer — and the email',
+  say:'The reply appears in the chat, and the agent uses one more <b>tool</b> to send the email. That’s the <b>output</b>: not just text, but a finished task. One sentence in, real work done.',
+  pk:'chat:  "Good news — you can return them! You have 18 days left…"\ncall:  send_email(to="you@example.com",\n                  subject="Return steps for ORD-7731")\n       ✓ sent'},
+ {mm:['foundation'],hue:'h-found',tag:'Layer 4 · Infrastructure',title:'Infrastructure ran every step',
+  say:'Everything above ran on the <b>infrastructure layer</b>: the LLM served by a cloud model provider, the policy documents stored in a vector database, the app running in a container on a cloud server. Invisible — but nothing works without it.',
+  pk:'LLM:        served via AWS Bedrock\nvector DB:  policy embeddings in pgvector\napp server: FastAPI in a Docker container on AWS\ntime taken: about 3 seconds'},
+ {mm:['ops'],hue:'h-gov',tag:'Layer 5 · Observability & Ops',title:'Ops watched the whole journey',
+  say:'Silently, the <b>observability &amp; ops layer</b> recorded every step: what was called, how long it took, tokens used and cost. An automatic check confirms the answer quoted the right rule. If something breaks tomorrow, engineers can replay exactly what happened.',
+  pk:'trace #48213   ✓ 9 steps · 2.8 s · 3,140 tokens\nchecks:  answer matches the returns policy  ✓\n         no other customer’s data shown     ✓'}
+];
+const N=STEPS.length;
+const mmEls=[...document.querySelectorAll('[data-mm]')];
+const dotsEl=document.getElementById('tdots');
+dotsEl.innerHTML=STEPS.map((s,i)=>`<button class="${s.hue}" data-i="${i}" aria-label="Step ${i+1}: ${s.title}">${i+1}</button>`).join('');
+const dots=[...dotsEl.children];
+const sayTag=document.getElementById('sayTag'),sayTitle=document.getElementById('sayTitle'),sayText=document.getElementById('sayText');
+const packet=document.getElementById('packet'),pkText=document.getElementById('pkText'),prog=document.getElementById('prog');
+const playBtn=document.getElementById('playBtn');
+let cur=-1,timer=null;
+
+function showStep(i){
+  cur=i;
+  const seen=new Set(); STEPS.slice(0,Math.max(i,0)).forEach(s=>s.mm.forEach(m=>seen.add(m)));
+  const now=i>=0?STEPS[i].mm:[];
+  mmEls.forEach(el=>{ const k=el.dataset.mm; el.classList.toggle('hit',now.includes(k)); el.classList.toggle('done',!now.includes(k)&&seen.has(k)); });
+  dots.forEach((d,j)=>{ d.classList.toggle('hit',j===i); d.classList.toggle('done',j<i); });
+  if(i<0){
+    sayTag.textContent='Ready'; sayTitle.textContent='One question, every layer';
+    sayText.innerHTML='Press <b>Play the journey</b> to follow the question step by step — or click a numbered step below.';
+    packet.hidden=true; prog.textContent=`STEP 0 / ${N}`; return;
+  }
+  const s=STEPS[i];
+  sayTag.textContent=`Step ${i+1} · ${s.tag}`; sayTitle.textContent=s.title; sayText.innerHTML=s.say;
+  pkText.textContent=s.pk; packet.hidden=false; prog.textContent=`STEP ${i+1} / ${N}`;
+  if(i===N-1) stopPlay(true);
+}
+function stopPlay(done){
+  clearInterval(timer); timer=null;
+  playBtn.querySelector('span').textContent= done?'Replay the journey':'Play the journey';
+}
+playBtn.addEventListener('click',()=>{
+  if(timer){ stopPlay(false); return; }
+  if(cur>=N-1) showStep(-1);
+  playBtn.querySelector('span').textContent='Pause';
+  const advance=()=>{ if(cur>=N-1){ stopPlay(true); return; } showStep(cur+1); };
+  advance();
+  timer=setInterval(advance,5200);
+});
+document.getElementById('stepBtn').addEventListener('click',()=>{ stopPlay(false); showStep(Math.min(cur+1,N-1)); });
+document.getElementById('prevBtn').addEventListener('click',()=>{ stopPlay(false); showStep(Math.max(cur-1,-1)); });
+document.getElementById('resetBtn').addEventListener('click',()=>{ stopPlay(false); showStep(-1); });
+dots.forEach(d=>d.addEventListener('click',()=>{ stopPlay(false); showStep(+d.dataset.i); }));
+
+/* ================= REVEAL + ALTITUDE RAIL ================= */
+const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.08});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+const railLinks=[...document.querySelectorAll('.alt-rail a')];
+const anchors=['family','map','trace','path'].map(id=>document.getElementById(id));
+const spy=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      const i=anchors.indexOf(e.target);
+      railLinks.forEach((a,j)=>a.classList.toggle('on',j===i));
+    }
+  });
+},{rootMargin:'-30% 0px -55% 0px'});
+anchors.forEach(a=>spy.observe(a));
+</script>
+</body>
+</html>
